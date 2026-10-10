@@ -6,7 +6,11 @@ from PIL import Image
 from io import BytesIO
 import os
 import tempfile
-from moviepy.editor import ImageClip, AudioFileClip, concatenate_videoclips
+# FIXED for new moviepy version
+try:
+    from moviepy.editor import ImageClip, AudioFileClip, concatenate_videoclips
+except ImportError:
+    from moviepy import ImageClip, AudioFileClip, concatenate_videoclips
 
 st.set_page_config(page_title="AI Movie Maker Pro", layout="wide")
 st.title("🎬 AI Story to Movie Generator")
@@ -91,8 +95,12 @@ if st.button("🎬 GENERATE MOVIE NOW", type="primary", use_container_width=True
                     audio_clip = AudioFileClip(audio_path)
 
                     # FIXED: No .resize() here - image is already 1280x720
-                    image_clip = ImageClip(img_path, duration=audio_clip.duration + 0.5)
-                    image_clip = image_clip.set_audio(audio_clip)
+                                        image_clip = ImageClip(img_path, duration=audio_clip.duration + 0.5)
+                    # Works for both moviepy v1 and v2
+                    try:
+                        image_clip = image_clip.set_audio(audio_clip)
+                    except AttributeError:
+                        image_clip = image_clip.with_audio(audio_clip)
                     
                     clips.append(image_clip)
                 except Exception as e:
