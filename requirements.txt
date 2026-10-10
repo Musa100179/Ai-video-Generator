@@ -1,7 +1,7 @@
 streamlit
 gTTS
 moviepy==1.0.3
-Pillow
+Pillow==9.5.0
 requests
-imageio
 imageio-ffmpeg
+numpy==1.26.4
