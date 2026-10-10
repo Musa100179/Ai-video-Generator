@@ -1,0 +1,5 @@
+streamlit
+gTTS
+moviepy
+Pillow
+requests
