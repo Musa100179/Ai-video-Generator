@@ -1,5 +1,10 @@
-streamlit>=1.30
-gtts>=2.5.0
-requests>=2.31
-Pillow>=10.0
-moviepy>=2.0
+streamlit
+edge-tts==6.1.12
+moviepy==1.0.3
+pillow
+requests
+numpy
+imageio
+imageio-ffmpeg
+proglog==0.1.10
+decorator==4.4.2
