@@ -1,2 +1,2 @@
 ffmpeg
-fonts-dejavu-core
+fonts-dejavu
