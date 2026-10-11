@@ -1,5 +1,5 @@
-streamlit
-requests
-Pillow
-moviepy
-gtts
+streamlit>=1.30
+gtts>=2.5.0
+requests>=2.31
+Pillow>=10.0
+moviepy>=2.0
