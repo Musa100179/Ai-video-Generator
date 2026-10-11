@@ -1,5 +1,6 @@
 streamlit
 edge-tts==6.1.12
+gTTS
 moviepy==1.0.3
 pillow
 requests
