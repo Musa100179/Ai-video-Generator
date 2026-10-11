@@ -1,11 +1,7 @@
 streamlit
-edge-tts==6.1.12
-gTTS
-moviepy==1.0.3
+edge-tts
+huggingface_hub
 pillow
-requests
-numpy
+moviepy
 imageio
 imageio-ffmpeg
-proglog==0.1.10
-decorator==4.4.2
