@@ -1,6 +1,5 @@
-streamlit>=1.36
-requests>=2.31
-Pillow>=10.0
-edge-tts>=6.1.12
-moviepy>=2.0.0
-imageio-ffmpeg>=0.5.1
+streamlit
+requests
+Pillow
+moviepy
+gtts
