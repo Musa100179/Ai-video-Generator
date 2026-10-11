@@ -13,7 +13,7 @@ from io import BytesIO
 import streamlit as st
 import requests
 from PIL import Image, ImageDraw, ImageFont
-import edge_tts
+from gtts import gTTS   # <-- CHANGED: using gTTS instead of edge_tts
 
 try:
     from moviepy import (
@@ -126,7 +126,6 @@ def detect_voice(line, narrator, hero, villain, extra):
 
 
 def image_prompt_for_scene(text, style, visual_anchor):
-    # Image endpoint is a community service; prompts are kept short for reliability.
     return f"{style}. {visual_anchor}. Scene: {text[:240]}. Wide cinematic composition, 16:9, no words, no subtitles, coherent character design"
 
 
@@ -142,7 +141,6 @@ def fetch_image(prompt, seed, width, height):
         response = requests.get(url, timeout=(10, 90))
         response.raise_for_status()
         if len(response.content) > 8_000:
-            # Validate that response is an image before caching it.
             Image.open(BytesIO(response.content)).verify()
             return response.content
     except Exception:
@@ -230,15 +228,11 @@ def add_subtitles(image, text):
     return image
 
 
-async def generate_speech(text, voice, output_path, rate):
-    await edge_tts.Communicate(
-        text, voice, rate=f"{rate:+d}%"
-    ).save(str(output_path))
-
-
-def run_async(coro):
-    # Streamlit normally runs this in a synchronous script context.
-    return asyncio.run(coro)
+# --------------------------- AUDIO (gTTS) ---------------------------
+def generate_speech(text, voice, output_path, rate):
+    """Generate MP3 using Google Text-to-Speech (works on Streamlit Cloud)."""
+    tts = gTTS(text=text, lang="en", slow=False)
+    tts.save(str(output_path))
 
 
 # --------------------------- VIDEO HELPERS ---------------------------
@@ -249,14 +243,11 @@ def make_scene_clip(image_path, audio_path, output_path, width, height, zoom, fp
     image_clip = set_duration(image_clip, duration)
 
     if zoom:
-        # Subtle motion on a still image; actual AI video requires a video-generation provider.
         if hasattr(image_clip, "resized"):
             image_clip = image_clip.resized(lambda t: 1.0 + 0.035 * (t / max(duration, .1)))
         else:
             image_clip = image_clip.resize(lambda t: 1.0 + 0.035 * (t / max(duration, .1)))
-        # Center the enlarged image to avoid black edges.
         image_clip = set_position(image_clip, ("center", "center"))
-        # A final crop is applied through a size-aware crop when available.
         try:
             from moviepy.video.fx import Crop
             image_clip = image_clip.with_effects([Crop(width=width, height=height, x_center=width/2, y_center=height/2)])
@@ -375,7 +366,7 @@ with scenes_tab:
 with about_tab:
     st.markdown("""
     **What this app does**
-    - Generates narration with Edge TTS voices.
+    - Generates narration with Google TTS (gTTS).
     - Requests a separate image for each scene and uses a gradient fallback if image generation fails.
     - Adds optional subtitles and gentle camera movement.
     - Saves per-scene files and a checkpoint so completed scenes can be reused on a later run.
@@ -384,12 +375,11 @@ with about_tab:
     **Important limitations**
     - This version uses still images with camera motion, not fully generated AI video footage.
     - The free image endpoint is an external community service and can be slow, rate-limited, or unavailable.
-    - Edge TTS depends on network access and service availability.
+    - gTTS depends on network access to Google Translate.
     - Streamlit Community Cloud may not have enough memory, runtime, or disk space for long movies. For long projects, run locally or on a server with FFmpeg and enough storage.
     - A target length is an estimate. The final runtime follows the generated narration unless you add more script or use a separate timing/editing stage.
     """)
 
-# Keep generated project in a stable local directory so checkpoints survive reruns.
 project_root = Path("movie_projects")
 project_root.mkdir(exist_ok=True)
 
@@ -472,11 +462,12 @@ if generate_clicked or resume_clicked:
         log_lines.append(f"Scene {scene_number}: {clean_text[:90]}")
         log_area.code("\n".join(log_lines[-12:]))
 
+        # --- AUDIO (gTTS - synchronous) ---
         audio_ok = audio_path.exists() and audio_path.stat().st_size > 1000
         if not audio_ok:
             for attempt in range(retries + 1):
                 try:
-                    run_async(generate_speech(clean_text, voice, audio_path, speech_rate))
+                    generate_speech(clean_text, voice, audio_path, speech_rate)
                     audio_ok = audio_path.exists() and audio_path.stat().st_size > 1000
                     if audio_ok:
                         break
@@ -548,7 +539,6 @@ if generate_clicked or resume_clicked:
             music_path.write_bytes(music_file.getvalue())
             try:
                 music_clip = AudioFileClip(str(music_path))
-                # Loop music to match movie length, then keep it quiet under narration.
                 if music_clip.duration < final.duration:
                     repeats = math.ceil(final.duration / music_clip.duration)
                     if hasattr(music_clip, "loop"):
